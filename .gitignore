@@ -1,0 +1,14 @@
+# venv
+venv/
+
+# dist
+dist/
+
+# .egg
+*.egg-info/
+
+# .pyc
+*.pyc
+
+# DS_Store
+.DS_Store
