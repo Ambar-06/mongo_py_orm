@@ -16,7 +16,7 @@ MongoPyORM is a lightweight Python Object-Relational Mapper (ORM)-like implement
 To install MongoPyORM, use pip:
 
 ```bash
-pip install mongopyorm
+pip install MongoPyORM
 ```
 
 ## Quick Start
