@@ -18,7 +18,6 @@ setup(
     packages=find_packages(where='MongoPyORM'),
     install_requires=[
         "pymongo>=4.10.1",   # To interact with MongoDB
-        "bson>=0.5"        # For BSON-specific operations like ObjectId
     ],
     keywords=['mongodb', 'ORM', 'database', 'MongoDB ORM', "Django", "Django ORM"],
     classifiers=[
