@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.8'
+VERSION = '0.0.9'
 DESCRIPTION = 'A lightweight Python Object-Relational Mapper (ORM)-like implementation for MongoDB'
 with open('README.md', 'r', encoding='utf-8') as f: 
     LONG_DESCRIPTION = f.read()
