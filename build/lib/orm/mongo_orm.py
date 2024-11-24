@@ -49,6 +49,8 @@ class FloatField(Field):
         super().__init__(required, default)
 
     def to_python(self, value):
+        if self.required and value is None:
+            raise ValueError("This field is required")
         if value is None:
             return None
         if not isinstance(value, float):
@@ -57,7 +59,12 @@ class FloatField(Field):
 
 
 class BooleanField(Field):
+    def __init__(self, default=None, required=False):
+        super().__init__(required, default)
+
     def to_python(self, value):
+        if self.required and value is None:
+            raise ValueError("This field is required")
         if value is None:
             return None
         if not isinstance(value, bool):
@@ -88,6 +95,8 @@ class UUIDField(Field):
         super().__init__(required, default)
 
     def to_python(self, value):
+        if self.required and value is None:
+            raise ValueError("This field is required")
         if value is None:
             return None
         if not isinstance(value, uuid.UUID):
@@ -113,12 +122,19 @@ class DateField(Field):
 
 
 class DateTimeField(Field):
-    def __init__(self, default=None, required=False, blank=True):
-        super().__init__(required, default, blank)
+    def __init__(self, auto_now=False, auto_now_add=False, **kwargs):
+        super().__init__(**kwargs)
+        self.auto_now = auto_now
+        self.auto_now_add = auto_now_add
         
     def to_python(self, value):
+        if self.auto_now:
+            return datetime.now()
+        if self.auto_now_add and value is None:
+            return datetime.now() 
         if value is None:
             return None
+
         if isinstance(value, str):
             try:
                 # Try to parse a datetime string into a datetime object
