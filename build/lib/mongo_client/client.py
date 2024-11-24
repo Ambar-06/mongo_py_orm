@@ -39,5 +39,6 @@ class Client:
         db = client[str(db_name)]
         return db
 
-client = Client()
-db = client.connect()
+if __name__ == "__main__":
+    client = Client()
+    db = client.connect()

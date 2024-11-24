@@ -2,7 +2,9 @@ import uuid
 
 from bson.objectid import ObjectId
 import datetime
-from mongo_client.client import db
+from mongo_client.client import Client
+
+db = Client().connect()
 
 class Field:
     def __init__(self, required=False, default=None, blank=False):
