@@ -167,7 +167,7 @@ Each field has the following optional attributes:
 MongoPyORM uses MongoDB credentials (e.g., username, password, database name, and cluster name) for establishing the connection. You can configure your credentials by creating a `MongoDBConfig` class, as demonstrated below:
 
 ```python
-from mongopyorm import MongoDBConfig
+from mongo_client.client import MongoDBConfig
 
 # Set up MongoDB credentials globally
 config = MongoDBConfig()
