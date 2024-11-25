@@ -145,6 +145,42 @@ class DateTimeField(Field):
             raise ValueError("Expected a datetime object or a valid datetime string")
         return value
 
+class QuerySet:
+    """A wrapper for query results, allowing for further operations like `.first()`."""
+
+    def __init__(self, model_class, documents_cursor, filter_criteria=None):
+        self.model_class = model_class
+        self.documents_cursor = documents_cursor    # Cursor from the MongoDB query
+        self.filter_criteria = filter_criteria or {} 
+
+    def __iter__(self):
+        """Allow the QuerySet to be iterable."""
+        return iter([self.model_class(**doc) for doc in self.documents_cursor])
+
+    def first(self):
+        """Return the first document if available."""
+        first_document = next(self.documents_cursor, None)
+        if first_document:
+            return self.model_class(**first_document)
+        return None
+    
+    def exclude(self, **kwargs):
+        """Exclude documents matching the given kwargs."""
+        excluded_docs = [
+            doc for doc in self.documents_cursor
+            if not all(item in doc.items() for item in kwargs.items())
+        ]
+        return [self.model_class(**doc) for doc in excluded_docs]
+
+    def count(self):
+        """Count the number of documents in the QuerySet."""
+        # Use count_documents with the filter criteria if available
+        if self.filter_criteria:
+            return self.documents_cursor.collection.count_documents(self.filter_criteria)
+        # Fallback to counting the cursor length if filter criteria are not stored
+        return len(list(self.documents_cursor))
+
+
 
 class MongoManager:
     def __init__(self, model_class):
@@ -153,13 +189,24 @@ class MongoManager:
 
     def all(self):
         """Fetch all documents from the collection."""
-        documents = self.collection.find()
-        return [self.model_class(**doc) for doc in documents]
+        documents_cursor = self.collection.find()
+        return QuerySet(self.model_class, documents_cursor)
 
     def filter(self, **kwargs):
         """Filter documents by the given kwargs."""
-        documents = self.collection.find(kwargs)
-        return [self.model_class(**doc) for doc in documents]
+        documents_cursor = self.collection.find(kwargs)
+        return QuerySet(self.model_class, documents_cursor, filter_criteria=kwargs)
+
+    def exclude(self, **kwargs):
+        """Exclude documents by the given kwargs."""
+        documents_cursor = self.collection.find()
+        return QuerySet(
+            self.model_class,
+            [
+                doc for doc in documents_cursor
+                if not all(item in doc.items() for item in kwargs.items())
+            ]
+        )
 
     def get(self, **kwargs):
         """Get a single document matching the kwargs."""

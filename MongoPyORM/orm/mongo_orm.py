@@ -148,9 +148,10 @@ class DateTimeField(Field):
 class QuerySet:
     """A wrapper for query results, allowing for further operations like `.first()`."""
 
-    def __init__(self, model_class, documents_cursor):
+    def __init__(self, model_class, documents_cursor, filter_criteria=None):
         self.model_class = model_class
-        self.documents_cursor = documents_cursor  # Cursor from the MongoDB query
+        self.documents_cursor = documents_cursor    # Cursor from the MongoDB query
+        self.filter_criteria = filter_criteria or {} 
 
     def __iter__(self):
         """Allow the QuerySet to be iterable."""
@@ -173,7 +174,11 @@ class QuerySet:
 
     def count(self):
         """Count the number of documents in the QuerySet."""
-        return self.documents_cursor.count()
+        # Use count_documents with the filter criteria if available
+        if self.filter_criteria:
+            return self.documents_cursor.collection.count_documents(self.filter_criteria)
+        # Fallback to counting the cursor length if filter criteria are not stored
+        return len(list(self.documents_cursor))
 
 
 
@@ -190,7 +195,7 @@ class MongoManager:
     def filter(self, **kwargs):
         """Filter documents by the given kwargs."""
         documents_cursor = self.collection.find(kwargs)
-        return QuerySet(self.model_class, documents_cursor)
+        return QuerySet(self.model_class, documents_cursor, filter_criteria=kwargs)
 
     def exclude(self, **kwargs):
         """Exclude documents by the given kwargs."""
