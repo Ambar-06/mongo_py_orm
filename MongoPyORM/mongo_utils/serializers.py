@@ -1,4 +1,4 @@
-from MongoPyORM.mongo_utils.mongo_orm import BooleanField, DateField, DateTimeField, UUIDField
+from .mongo_orm import BooleanField, DateField, DateTimeField, UUIDField
 import uuid
 import datetime
 
