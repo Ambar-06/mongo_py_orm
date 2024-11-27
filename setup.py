@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 DESCRIPTION = 'A lightweight Python Object-Relational Mapper (ORM)-like implementation for MongoDB'
 with open('README.md', 'r', encoding='utf-8') as f: 
     LONG_DESCRIPTION = f.read()
@@ -13,7 +13,7 @@ setup(
     description=DESCRIPTION,
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
-    py_modules=["mongo_orm", "client"],
+    py_modules=["mongo_orm", "client", "serializers"],
     package_dir={"": "MongoPyORM"},
     packages=find_packages(where='MongoPyORM'),
     install_requires=[
@@ -30,7 +30,7 @@ setup(
         "Operating System :: Microsoft :: Windows",
     ],
     package_data={
-        'mongopyorm': ['mongo_client/*.py', 'orm/*.py'],
+        'mongopyorm': ['mongo_client/*.py', 'mongo_utils/*.py'],
     },
     python_requires='>=3.6',
 )
