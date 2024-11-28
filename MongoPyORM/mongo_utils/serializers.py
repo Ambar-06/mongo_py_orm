@@ -75,11 +75,27 @@ class MongoSerializer:
         instance.save()
         return instance
 
-    def to_representation(self):
-        """Convert the instance or list of instances to a dictionary representation."""
-        if self.many:
-            return [self._instance_to_dict(instance) for instance in self.instance]
-        return self._instance_to_dict(self.instance)
+    # def to_representation(self):
+    #     """Convert the instance or list of instances to a dictionary representation."""
+    #     if self.many:
+    #         return [self._instance_to_dict(instance) for instance in self.instance]
+    #     return self._instance_to_dict(self.instance)
+    def to_representation(self, instance):
+        """
+        Default implementation for converting an instance to a dictionary.
+        Should be overridden for customization.
+        """
+        # Convert the instance to a dictionary using fields defined in `_get_fields`.
+        fields = self._get_fields()
+        data = {}
+        for field_name, field_serializer in fields.items():
+            value = getattr(instance, field_name, None)
+            if callable(field_serializer):
+                # Handle SerializerMethodField-like fields
+                data[field_name] = field_serializer(instance)
+            else:
+                data[field_name] = field_serializer.to_representation(value)
+        return data
 
     def _instance_to_dict(self, instance):
         """Convert a single instance to a dictionary."""
