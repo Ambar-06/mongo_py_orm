@@ -3,7 +3,7 @@ import uuid
 import datetime
 
 class MongoSerializer:
-    def __init__(self, instance=None, data=None, partial=False, many=False):
+    def __init__(self, instance=None, data=None, partial=False, many=False, context=None):
         """
         Initialize the serializer with an instance or data for validation.
         
@@ -19,6 +19,7 @@ class MongoSerializer:
         self.many = many
         self.errors = {}
         self.validated_data = {}
+        self.context = context
 
     def _get_fields(self):
         """Retrieve the fields from the associated model class."""
