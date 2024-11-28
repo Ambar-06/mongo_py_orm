@@ -193,8 +193,21 @@ class MongoManager:
         return QuerySet(self.model_class, documents_cursor)
 
     def filter(self, **kwargs):
-        """Filter documents by the given kwargs."""
-        documents_cursor = self.collection.find(kwargs)
+        """
+        Filter documents by the given kwargs, supporting `__in` for fields.
+        """
+        mongo_query = {}
+        
+        for key, value in kwargs.items():
+            # Handle `__in` lookups
+            if "__in" in key:
+                field_name = key.split("__")[0]
+                mongo_query[field_name] = {"$in": value}
+            else:
+                mongo_query[key] = value
+        
+        # Query MongoDB with the converted query
+        documents_cursor = self.collection.find(mongo_query)
         return QuerySet(self.model_class, documents_cursor, filter_criteria=kwargs)
 
     def exclude(self, **kwargs):
