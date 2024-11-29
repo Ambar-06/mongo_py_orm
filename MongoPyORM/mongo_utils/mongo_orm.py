@@ -179,6 +179,11 @@ class QuerySet:
             return self.documents_cursor.collection.count_documents(self.filter_criteria)
         # Fallback to counting the cursor length if filter criteria are not stored
         return len(list(self.documents_cursor))
+    
+    def delete(self):
+        """Delete all documents in the QuerySet."""
+        for doc in self.documents_cursor:
+            self.model_class(**doc).delete()
 
 
 
