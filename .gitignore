@@ -12,3 +12,6 @@ dist/
 
 # DS_Store
 .DS_Store
+
+# Secret
+secret.txt
