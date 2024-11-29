@@ -1,6 +1,7 @@
-from .mongo_orm import BooleanField, DateField, DateTimeField, UUIDField
+from .mongo_orm import BooleanField, DateField, DateTimeField, UUIDField, QuerySet
 import uuid
 import datetime
+from bson import ObjectId
 
 class MongoSerializer:
     def __init__(self, instance=None, data=None, partial=False, many=False, context=None):
@@ -76,27 +77,49 @@ class MongoSerializer:
         instance.save()
         return instance
 
-    # def to_representation(self):
-    #     """Convert the instance or list of instances to a dictionary representation."""
-    #     if self.many:
-    #         return [self._instance_to_dict(instance) for instance in self.instance]
-    #     return self._instance_to_dict(self.instance)
-    def to_representation(self, instance):
+    def to_representation(self, instance=None):
         """
-        Default implementation for converting an instance to a dictionary.
-        Should be overridden for customization.
+        Convert the instance or list of instances to a dictionary representation.
+        Handles both individual instances and lists/QuerySets of instances.
+
+        Args:
+            instance: A single instance or a list/QuerySet of instances to be serialized.
+
+        Returns:
+            dict or list: Serialized representation of the instance(s).
         """
-        # Convert the instance to a dictionary using fields defined in `_get_fields`.
         fields = self._get_fields()
         data = {}
-        for field_name, field_serializer in fields.items():
-            value = getattr(instance, field_name, None)
-            if callable(field_serializer):
-                # Handle SerializerMethodField-like fields
-                data[field_name] = field_serializer(instance)
-            else:
-                data[field_name] = field_serializer.to_representation(value)
-        return data
+        instance = instance or self.instance
+
+        # Handle individual instance serialization
+        if isinstance(instance, self._get_model_class()):
+            # Serialize fields for the instance
+            for field_name, field_serializer in fields.items():
+                value = getattr(instance, field_name, None)
+                if callable(field_serializer):
+                    # Handle SerializerMethodField-like fields
+                    data[field_name] = field_serializer(instance)
+                else:
+                    data[field_name] = field_serializer.to_representation(value)
+
+            # Add MongoDB `_id` field as string if it exists
+            if hasattr(instance, "_id") and isinstance(instance._id, ObjectId):
+                data["_id"] = str(instance._id)
+
+            # Default values for price-related fields
+            data["price"] = data.get("price", 0.0)
+            data["offer_price"] = data.get("offer_price", 0.0)
+
+            return data
+
+        # Handle list/QuerySet serialization
+        if isinstance(instance, (list, QuerySet)):
+            return [self.to_representation(obj) for obj in instance]
+
+        raise ValueError(
+            f"Unsupported type for serialization: {type(instance)}. Expected model instance, list, or QuerySet."
+        )
 
     def _instance_to_dict(self, instance):
         """Convert a single instance to a dictionary."""
