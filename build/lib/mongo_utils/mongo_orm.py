@@ -155,7 +155,13 @@ class QuerySet:
 
     def __iter__(self):
         """Allow the QuerySet to be iterable."""
-        return iter([self.model_class(**doc) for doc in self.documents_cursor])
+        """Make the QuerySet iterable."""
+        print("Iterating over QuerySet...")
+        try:
+            docs = [self.model_class(**doc) for doc in self.documents_cursor]
+            return iter(docs)
+        except Exception as e:
+            return iter([])
 
     def first(self):
         """Return the first document if available."""
@@ -205,12 +211,27 @@ class MongoManager:
         print("Filter Criteria:", kwargs)
         
         for key, value in kwargs.items():
-            # Handle `__in` lookups
-            if "__in" in key:
-                if key == "_id":
-                    value = [ObjectId(v) for v in value]
-                field_name = key.split("__")[0]
-                mongo_query[field_name] = {"$in": value}
+            if "__" in key:
+                field_name, lookup = key.split("__", 1)
+
+                if lookup == "in":
+                    if field_name == "_id":
+                        value = [ObjectId(v) for v in value]
+                    mongo_query[field_name] = {"$in": value}
+
+                elif lookup == "contains":
+                    if not isinstance(value, str):
+                        raise ValueError("The `contains` filter expects a string value.")
+                    mongo_query[field_name] = {"$regex": f"{value}"}
+
+                elif lookup == "icontains":
+                    if not isinstance(value, str):
+                        raise ValueError("The `icontains` filter expects a string value.")
+                    # Case-insensitive matching using $regex and $options: "i"
+                    mongo_query[field_name] = {"$regex": f"{value}", "$options": "i"}
+
+                else:
+                    raise ValueError(f"Unsupported lookup: {lookup}")
             else:
                 if key == "_id":
                     value = ObjectId(value)
@@ -218,8 +239,13 @@ class MongoManager:
         print("Generated Mongo Query:", mongo_query)
         
         # Query MongoDB with the converted query
-        documents_cursor = self.collection.find(mongo_query)
-        return QuerySet(self.model_class, documents_cursor, filter_criteria=kwargs)
+        try:
+            documents_cursor = self.collection.find(mongo_query)
+            print("Query Results (List):", list(documents_cursor))  # Debug cursor results
+            return QuerySet(self.model_class, self.collection.find(mongo_query), filter_criteria=kwargs)
+        except Exception as e:
+            print("Error Executing Query:", str(e))
+            return QuerySet(self.model_class, [], filter_criteria=kwargs)
 
     def exclude(self, **kwargs):
         """Exclude documents by the given kwargs."""
