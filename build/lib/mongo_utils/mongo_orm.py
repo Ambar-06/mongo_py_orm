@@ -202,14 +202,20 @@ class MongoManager:
         Filter documents by the given kwargs, supporting `__in` for fields.
         """
         mongo_query = {}
+        print("Filter Criteria:", kwargs)
         
         for key, value in kwargs.items():
             # Handle `__in` lookups
             if "__in" in key:
+                if key == "_id":
+                    value = [ObjectId(v) for v in value]
                 field_name = key.split("__")[0]
                 mongo_query[field_name] = {"$in": value}
             else:
+                if key == "_id":
+                    value = ObjectId(value)
                 mongo_query[key] = value
+        print("Generated Mongo Query:", mongo_query)
         
         # Query MongoDB with the converted query
         documents_cursor = self.collection.find(mongo_query)
@@ -235,7 +241,24 @@ class MongoManager:
 
     def create(self, **kwargs):
         """Create a new document in the collection."""
-        document = kwargs
+        current_time = datetime.datetime.now()
+        document = {}
+        fields = self.model_class._get_fields()
+        for key, field in fields.items():
+            value = kwargs.get(key, field.default)
+
+            # Handle auto_now_add fields
+            if isinstance(field, DateTimeField):
+                if field.auto_now_add:
+                    value = current_time
+                if field.auto_now:
+                    value = current_time
+
+            # Handle required fields
+            if value is None and field.required:
+                raise ValueError(f"Field '{key}' is required.")
+
+            document[key] = value
         result = self.collection.insert_one(document)
         document["_id"] = result.inserted_id
         return self.model_class(**document)
@@ -251,7 +274,20 @@ class MongoModel:
             setattr(self, key, field_value)
 
     def save(self):
-        data = {key: getattr(self, key) for key in self._get_fields()}
+        current_time = datetime.datetime.now()
+        data = {}
+        for key, field in self._get_fields().items():
+            value = getattr(self, key)
+
+            if isinstance(field, DateTimeField):
+                # Handle auto_now
+                if field.auto_now:
+                    value = current_time
+                    setattr(self, key, value)
+
+            # Prepare data for saving
+            data[key] = value
+
         if self._id:
             self.objects.collection.update_one(
                 {"_id": ObjectId(self._id)}, {"$set": data}

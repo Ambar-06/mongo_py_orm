@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1.9'
+VERSION = '0.2.0'
 DESCRIPTION = 'A lightweight Python Object-Relational Mapper (ORM)-like implementation for MongoDB'
 with open('README.md', 'r', encoding='utf-8') as f: 
     LONG_DESCRIPTION = f.read()
@@ -21,7 +21,7 @@ setup(
     ],
     keywords=['mongodb', 'ORM', 'database', 'MongoDB ORM', "Django", "Django ORM"],
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
