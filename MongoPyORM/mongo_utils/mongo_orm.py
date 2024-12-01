@@ -310,6 +310,10 @@ class MongoModel:
                 if field.auto_now:
                     value = current_time
                     setattr(self, key, value)
+            if isinstance(field, DateTimeField):
+                if field.auto_now_add and self._id is None:
+                    value = current_time
+                    setattr(self, key, value)
 
             # Prepare data for saving
             data[key] = value
