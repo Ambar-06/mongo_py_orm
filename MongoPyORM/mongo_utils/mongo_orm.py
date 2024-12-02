@@ -156,7 +156,6 @@ class QuerySet:
     def __iter__(self):
         """Allow the QuerySet to be iterable."""
         """Make the QuerySet iterable."""
-        print("Iterating over QuerySet...")
         try:
             docs = [self.model_class(**doc) for doc in self.documents_cursor]
             return iter(docs)
@@ -208,7 +207,6 @@ class MongoManager:
         Filter documents by the given kwargs, supporting `__in` for fields.
         """
         mongo_query = {}
-        print("Filter Criteria:", kwargs)
         
         for key, value in kwargs.items():
             if "__" in key:
@@ -236,12 +234,10 @@ class MongoManager:
                 if key == "_id":
                     value = ObjectId(value)
                 mongo_query[key] = value
-        print("Generated Mongo Query:", mongo_query)
         
         # Query MongoDB with the converted query
         try:
             documents_cursor = self.collection.find(mongo_query)
-            print("Query Results (List):", list(documents_cursor))  # Debug cursor results
             return QuerySet(self.model_class, self.collection.find(mongo_query), filter_criteria=kwargs)
         except Exception as e:
             print("Error Executing Query:", str(e))
