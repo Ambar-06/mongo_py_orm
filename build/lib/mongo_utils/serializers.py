@@ -107,10 +107,6 @@ class MongoSerializer:
             if hasattr(instance, "_id") and isinstance(instance._id, ObjectId):
                 data["_id"] = str(instance._id)
 
-            # Default values for price-related fields
-            data["price"] = data.get("price", 0.0)
-            data["offer_price"] = data.get("offer_price", 0.0)
-
             return data
 
         # Handle list/QuerySet serialization

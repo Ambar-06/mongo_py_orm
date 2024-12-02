@@ -148,10 +148,11 @@ class DateTimeField(Field):
 class QuerySet:
     """A wrapper for query results, allowing for further operations like `.first()`."""
 
-    def __init__(self, model_class, documents_cursor, filter_criteria=None):
+    def __init__(self, model_class, documents_cursor, filter_criteria=None, sort_criteria=None):
         self.model_class = model_class
         self.documents_cursor = documents_cursor    # Cursor from the MongoDB query
         self.filter_criteria = filter_criteria or {} 
+        self.sort_criteria = sort_criteria or []
 
     def __iter__(self):
         """Allow the QuerySet to be iterable."""
@@ -190,6 +191,26 @@ class QuerySet:
         for doc in self.documents_cursor:
             self.model_class(**doc).delete()
 
+    def order_by(self, *fields):
+        """
+        Order the QuerySet by the specified fields.
+        Use '-' prefix for descending order and no prefix for ascending.
+        """
+        sort_criteria = []
+        for field in fields:
+            if field.startswith('-'):
+                sort_criteria.append((field[1:], -1))  # Descending
+            else:
+                sort_criteria.append((field, 1))  # Ascending
+
+        # Apply sorting to the current cursor
+        sorted_cursor = self.documents_cursor.sort(sort_criteria)
+        return QuerySet(
+            self.model_class,
+            sorted_cursor,
+            filter_criteria=self.filter_criteria,
+            sort_criteria=sort_criteria
+        )
 
 
 class MongoManager:
