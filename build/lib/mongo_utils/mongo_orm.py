@@ -234,7 +234,7 @@ class MongoManager:
                 field_name, lookup = key.split("__", 1)
 
                 if lookup == "in":
-                    if field_name == "_id":
+                    if field_name == "_id" or field_name.endswith("_id"):
                         value = [ObjectId(v) for v in value]
                     mongo_query[field_name] = {"$in": value}
 
@@ -252,7 +252,7 @@ class MongoManager:
                 else:
                     raise ValueError(f"Unsupported lookup: {lookup}")
             else:
-                if key == "_id":
+                if key == "_id" or  key.endswith("_id"):
                     value = ObjectId(value)
                 mongo_query[key] = value
         
