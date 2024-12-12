@@ -1,13 +1,16 @@
 from .mongo_orm import BooleanField, DateField, DateTimeField, UUIDField, QuerySet
 import uuid
-import datetime
+from datetime import datetime, date
 from bson import ObjectId
 
+
 class MongoSerializer:
-    def __init__(self, instance=None, data=None, partial=False, many=False, context=None):
+    def __init__(
+        self, instance=None, data=None, partial=False, many=False, context=None
+    ):
         """
         Initialize the serializer with an instance or data for validation.
-        
+
         Args:
             instance (MongoModel or list): A single model instance or a list of instances.
             data (dict or list): Data to validate and deserialize (can be a list of dictionaries if `many=True`).
@@ -129,9 +132,9 @@ class MongoSerializer:
         """Convert a field's value to a representation suitable for JSON."""
         if isinstance(field_obj, UUIDField) and isinstance(value, uuid.UUID):
             return str(value)
-        if isinstance(field_obj, DateTimeField) and isinstance(value, datetime.datetime):
+        if isinstance(field_obj, DateTimeField) and isinstance(value, datetime):
             return value.strftime("%Y-%m-%d %H:%M:%S")
-        if isinstance(field_obj, DateField) and isinstance(value, datetime.date):
+        if isinstance(field_obj, DateField) and isinstance(value, date):
             return value.strftime("%Y-%m-%d")
         if isinstance(field_obj, BooleanField):
             return bool(value)
