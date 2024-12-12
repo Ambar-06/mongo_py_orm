@@ -1,10 +1,11 @@
 import uuid
 
 from bson.objectid import ObjectId
-import datetime
+from datetime import datetime, date
 from mongo_client.client import Client
 
 db = Client().connect()
+
 
 class Field:
     def __init__(self, required=False, default=None, blank=False):
@@ -102,7 +103,8 @@ class UUIDField(Field):
         if not isinstance(value, uuid.UUID):
             raise ValueError("Expected an UUID")
         return value
-    
+
+
 class DateField(Field):
     def __init__(self, default=None, required=False):
         super().__init__(required, default)
@@ -113,10 +115,10 @@ class DateField(Field):
         if isinstance(value, str):
             try:
                 # Try to parse a date string into a date object
-                value = datetime.datetime.strptime(value, "%Y-%m-%d").date()
+                value = datetime.strptime(value, "%Y-%m-%d").date()
             except ValueError:
                 raise ValueError("Expected a valid date string in 'YYYY-MM-DD' format")
-        if not isinstance(value, datetime.date):
+        if not isinstance(value, date):
             raise ValueError("Expected a date object or a valid date string")
         return value
 
@@ -126,32 +128,37 @@ class DateTimeField(Field):
         super().__init__(**kwargs)
         self.auto_now = auto_now
         self.auto_now_add = auto_now_add
-        
+
     def to_python(self, value):
         if self.auto_now:
             return datetime.now()
         if self.auto_now_add and value is None:
-            return datetime.now() 
+            return datetime.now()
         if value is None:
             return None
 
         if isinstance(value, str):
             try:
                 # Try to parse a datetime string into a datetime object
-                value = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+                value = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
             except ValueError:
-                raise ValueError("Expected a valid datetime string in 'YYYY-MM-DD HH:MM:SS' format")
-        if not isinstance(value, datetime.datetime):
+                raise ValueError(
+                    "Expected a valid datetime string in 'YYYY-MM-DD HH:MM:SS' format"
+                )
+        if not isinstance(value, datetime):
             raise ValueError("Expected a datetime object or a valid datetime string")
         return value
+
 
 class QuerySet:
     """A wrapper for query results, allowing for further operations like `.first()`."""
 
-    def __init__(self, model_class, documents_cursor, filter_criteria=None, sort_criteria=None):
+    def __init__(
+        self, model_class, documents_cursor, filter_criteria=None, sort_criteria=None
+    ):
         self.model_class = model_class
-        self.documents_cursor = documents_cursor    # Cursor from the MongoDB query
-        self.filter_criteria = filter_criteria or {} 
+        self.documents_cursor = documents_cursor  # Cursor from the MongoDB query
+        self.filter_criteria = filter_criteria or {}
         self.sort_criteria = sort_criteria or []
 
     def __iter__(self):
@@ -169,11 +176,12 @@ class QuerySet:
         if first_document:
             return self.model_class(**first_document)
         return None
-    
+
     def exclude(self, **kwargs):
         """Exclude documents matching the given kwargs."""
         excluded_docs = [
-            doc for doc in self.documents_cursor
+            doc
+            for doc in self.documents_cursor
             if not all(item in doc.items() for item in kwargs.items())
         ]
         return [self.model_class(**doc) for doc in excluded_docs]
@@ -182,10 +190,12 @@ class QuerySet:
         """Count the number of documents in the QuerySet."""
         # Use count_documents with the filter criteria if available
         if self.filter_criteria:
-            return self.documents_cursor.collection.count_documents(self.filter_criteria)
+            return self.documents_cursor.collection.count_documents(
+                self.filter_criteria
+            )
         # Fallback to counting the cursor length if filter criteria are not stored
         return len(list(self.documents_cursor))
-    
+
     def delete(self):
         """Delete all documents in the QuerySet."""
         for doc in self.documents_cursor:
@@ -198,7 +208,7 @@ class QuerySet:
         """
         sort_criteria = []
         for field in fields:
-            if field.startswith('-'):
+            if field.startswith("-"):
                 sort_criteria.append((field[1:], -1))  # Descending
             else:
                 sort_criteria.append((field, 1))  # Ascending
@@ -209,7 +219,7 @@ class QuerySet:
             self.model_class,
             sorted_cursor,
             filter_criteria=self.filter_criteria,
-            sort_criteria=sort_criteria
+            sort_criteria=sort_criteria,
         )
 
 
@@ -228,7 +238,7 @@ class MongoManager:
         Filter documents by the given kwargs, supporting `__in` for fields.
         """
         mongo_query = {}
-        
+
         for key, value in kwargs.items():
             if "__" in key:
                 field_name, lookup = key.split("__", 1)
@@ -240,26 +250,34 @@ class MongoManager:
 
                 elif lookup == "contains":
                     if not isinstance(value, str):
-                        raise ValueError("The `contains` filter expects a string value.")
+                        raise ValueError(
+                            "The `contains` filter expects a string value."
+                        )
                     mongo_query[field_name] = {"$regex": f"{value}"}
 
                 elif lookup == "icontains":
                     if not isinstance(value, str):
-                        raise ValueError("The `icontains` filter expects a string value.")
+                        raise ValueError(
+                            "The `icontains` filter expects a string value."
+                        )
                     # Case-insensitive matching using $regex and $options: "i"
                     mongo_query[field_name] = {"$regex": f"{value}", "$options": "i"}
 
                 else:
                     raise ValueError(f"Unsupported lookup: {lookup}")
             else:
-                if key == "_id" or  key.endswith("_id"):
+                if key == "_id" or key.endswith("_id"):
                     value = ObjectId(value)
                 mongo_query[key] = value
-        
+
         # Query MongoDB with the converted query
         try:
             documents_cursor = self.collection.find(mongo_query)
-            return QuerySet(self.model_class, self.collection.find(mongo_query), filter_criteria=kwargs)
+            return QuerySet(
+                self.model_class,
+                self.collection.find(mongo_query),
+                filter_criteria=kwargs,
+            )
         except Exception as e:
             print("Error Executing Query:", str(e))
             return QuerySet(self.model_class, [], filter_criteria=kwargs)
@@ -270,9 +288,10 @@ class MongoManager:
         return QuerySet(
             self.model_class,
             [
-                doc for doc in documents_cursor
+                doc
+                for doc in documents_cursor
                 if not all(item in doc.items() for item in kwargs.items())
-            ]
+            ],
         )
 
     def get(self, **kwargs):
@@ -284,7 +303,7 @@ class MongoManager:
 
     def create(self, **kwargs):
         """Create a new document in the collection."""
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         document = {}
         fields = self.model_class._get_fields()
         for key, field in fields.items():
@@ -317,7 +336,7 @@ class MongoModel:
             setattr(self, key, field_value)
 
     def save(self):
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         data = {}
         for key, field in self._get_fields().items():
             value = getattr(self, key)
