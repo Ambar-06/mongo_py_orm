@@ -195,6 +195,9 @@ class QuerySet:
             )
         # Fallback to counting the cursor length if filter criteria are not stored
         return len(list(self.documents_cursor))
+    
+    def __len__(self):
+        return self.count()
 
     def delete(self):
         """Delete all documents in the QuerySet."""
