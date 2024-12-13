@@ -3,6 +3,7 @@ import uuid
 from bson.objectid import ObjectId
 from datetime import datetime, date
 from mongo_client.client import Client
+from itertools import tee
 
 db = Client().connect()
 
@@ -176,6 +177,30 @@ class QuerySet:
         if first_document:
             return self.model_class(**first_document)
         return None
+    
+    def last(self):
+        """Return the last document if available."""
+        last_document = None
+        for doc in self.documents_cursor:
+            last_document = doc
+        if last_document:
+            return self.model_class(**last_document)
+        return None
+    
+    def copy_queryset(self):
+        """Return a copy of the current QuerySet."""
+        cloned_cursor, cursor_copy = tee(self.documents_cursor)
+        return QuerySet(
+            self.model_class,
+            cloned_cursor,
+            filter_criteria=self.filter_criteria,
+            sort_criteria=self.sort_criteria,
+        ), QuerySet(
+            self.model_class,
+            cursor_copy,
+            filter_criteria=self.filter_criteria,
+            sort_criteria=self.sort_criteria,
+        )
 
     def exclude(self, **kwargs):
         """Exclude documents matching the given kwargs."""
