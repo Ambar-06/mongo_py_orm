@@ -327,7 +327,7 @@ class MongoManager:
         document = self.collection.find_one(kwargs)
         if document:
             return self.model_class(**document)
-        raise ValueError(f"No document found matching: {kwargs}")
+        raise ValueError(f"No {self.model_class.Meta.collection_name} instance found matching: {kwargs}")
 
     def create(self, **kwargs):
         """Create a new document in the collection."""
