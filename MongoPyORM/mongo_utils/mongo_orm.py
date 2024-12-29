@@ -155,12 +155,14 @@ class QuerySet:
     """A wrapper for query results, allowing for further operations like `.first()`."""
 
     def __init__(
-        self, model_class, documents_cursor, filter_criteria=None, sort_criteria=None
+        self, model_class, documents_cursor, filter_criteria=None, sort_criteria=None, query=None, collection=None
     ):
         self.model_class = model_class
         self.documents_cursor = documents_cursor  # Cursor from the MongoDB query
         self.filter_criteria = filter_criteria or {}
         self.sort_criteria = sort_criteria or []
+        self.query = query
+        self.collection = collection
 
     def __iter__(self):
         """Allow the QuerySet to be iterable."""
@@ -242,7 +244,7 @@ class QuerySet:
                 sort_criteria.append((field, 1))  # Ascending
 
         # Apply sorting to the current cursor
-        sorted_cursor = self.documents_cursor.sort(sort_criteria)
+        sorted_cursor = self.collection.find(self.query).sort(sort_criteria)
         return QuerySet(
             self.model_class,
             sorted_cursor,
@@ -300,11 +302,12 @@ class MongoManager:
 
         # Query MongoDB with the converted query
         try:
-            documents_cursor = self.collection.find(mongo_query)
             return QuerySet(
                 self.model_class,
                 self.collection.find(mongo_query),
                 filter_criteria=kwargs,
+                query=mongo_query,
+                collection=self.collection
             )
         except Exception as e:
             print("Error Executing Query:", str(e))
