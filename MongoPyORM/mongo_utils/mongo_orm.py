@@ -152,7 +152,7 @@ class DateTimeField(Field):
 
 
 class QuerySet:
-    """A wrapper for query results, allowing for further operations like `.first()`."""
+    """A wrapper for query results, allowing for further operations like `.first()`. """
 
     def __init__(
         self, model_class, documents_cursor, filter_criteria=None, sort_criteria=None, query=None, collection=None
@@ -236,6 +236,7 @@ class QuerySet:
         Order the QuerySet by the specified fields.
         Use '-' prefix for descending order and no prefix for ascending.
         """
+        # Create sort criteria from the fields
         sort_criteria = []
         for field in fields:
             if field.startswith("-"):
@@ -243,14 +244,80 @@ class QuerySet:
             else:
                 sort_criteria.append((field, 1))  # Ascending
 
-        # Apply sorting to the current cursor
-        sorted_cursor = self.collection.find(self.query).sort(sort_criteria)
+        # Determine the collection to use
+        if not hasattr(self, 'collection') or self.collection is None:
+            # If we don't have a collection directly, try to get it from the cursor
+            if hasattr(self.documents_cursor, 'collection'):
+                collection = self.documents_cursor.collection
+            else:
+                # Try to get collection from model_class
+                try:
+                    collection = db[self.model_class.Meta.collection_name]
+                except (AttributeError, KeyError):
+                    raise ValueError("Cannot order results: no collection available")
+        else:
+            collection = self.collection
+
+        # Create a new query with the same filter criteria and apply sorting
+        # This avoids the issue with consumable cursors
+        sorted_cursor = collection.find(self.filter_criteria).sort(sort_criteria)
+        
+        # Return a new QuerySet with the sorted cursor
         return QuerySet(
             self.model_class,
             sorted_cursor,
             filter_criteria=self.filter_criteria,
             sort_criteria=sort_criteria,
+            query=self.filter_criteria,
+            collection=collection
         )
+        
+    def values_list(self, *fields, flat=False):
+        """
+        Return a list of tuples containing the values for the specified fields.
+        If flat=True and only one field is provided, return a flat list of values.
+        
+        Example:
+            # Returns [(1, 'name1'), (2, 'name2'), ...]
+            Model.objects.filter(...).values_list('id', 'name')
+            
+            # Returns [1, 2, ...] with flat=True
+            Model.objects.filter(...).values_list('id', flat=True)
+        """
+        if not fields:
+            raise ValueError("values_list() requires at least one field name")
+            
+        if flat and len(fields) > 1:
+            raise ValueError("'flat' is not valid when values_list is called with more than one field")
+        
+        result = []
+        
+        # Handle consumable cursor issue by creating a fresh query if possible
+        if hasattr(self, 'collection') and self.collection is not None and hasattr(self, 'filter_criteria'):
+            # Create a fresh cursor with the same filter criteria
+            cursor = self.collection.find(self.filter_criteria)
+            
+            # Apply any sort criteria if available
+            if hasattr(self, 'sort_criteria') and self.sort_criteria:
+                cursor = cursor.sort(self.sort_criteria)
+        else:
+            # If we can't create a fresh cursor, use the existing one
+            # Note: This might be empty if the cursor has already been consumed
+            cursor = self.documents_cursor
+            
+        # Process the cursor to extract the requested fields
+        for doc in cursor:
+            if flat:
+                # With flat=True, return a flat list of single values
+                field = fields[0]
+                result.append(doc.get(field))
+            else:
+                # Return a list of tuples with values for each field
+                values = tuple(doc.get(field) for field in fields)
+                result.append(values)
+                
+        return result
+        
 
 
 class MongoManager:
