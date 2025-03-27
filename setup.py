@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.3.3'
+VERSION = '0.3.4'
 DESCRIPTION = 'A lightweight Python Object-Relational Mapper (ORM)-like implementation for MongoDB'
 with open('README.md', 'r', encoding='utf-8') as f: 
     LONG_DESCRIPTION = f.read()
 
 setup(
-    name="MongoPyORM",
+    name="mongopyorm",
     version=VERSION,
     author="Ambar Rizvi",
     author_email="<brannstrom9911@gmail.com>",
@@ -14,8 +14,8 @@ setup(
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
     py_modules=["mongo_orm", "client", "serializers"],
-    package_dir={"": "MongoPyORM"},
-    packages=find_packages(where='MongoPyORM'),
+    package_dir={"": "mongopyorm"},
+    packages=find_packages(where='mongopyorm'),
     install_requires=[
         "pymongo>=4.10.1",   # To interact with MongoDB
     ],
