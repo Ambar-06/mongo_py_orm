@@ -72,14 +72,14 @@ Once your project is configured, you can start creating models using the package
   Import the field types and base model class from the `orm.mongo_orm` module:
 
   ```python
-  from orm.mongo_orm import CharField, FloatField, MongoModel, UUIDField
+  from mongo_utils.mongo_orm import CharField, FloatField, MongoModel, UUIDField
   ```
 
 - **Define Your Model**  
   Create a Python class that inherits from `MongoModel` and define your fields:
 
   ```python
-  from mongopyorm import MongoModel, CharField, IntegerField, BooleanField
+  from mongo_utils.mongo_orm import MongoModel, CharField, IntegerField, BooleanField
 
   class User(MongoModel):
       username = CharField(max_length=150, required=True)
